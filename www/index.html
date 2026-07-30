@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Command — Mohit</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0891B2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Student Command">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#F0F2F2;--surface:#FFFFFF;--surface2:#F7F8F8;--surface3:#EAEDED;
+  --border:#D5D9D9;--border2:#B0B8B8;
+  --text:#0F1111;--muted:#565959;--muted2:#8D9494;
+  --accent:#0891B2;--accent-text:#FFFFFF;
+  --green:#007600;--orange:#C84B00;--red:#CC0C39;--yellow:#B07800;--purple:#7B5EA7;--blue:#3B6FD4;
+  --fd:'Nunito Sans',sans-serif;--fb:'Nunito Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --nav:#232F3E;--navline:#131921;
+}
+body.dark{
+  --bg:#0D1117;--surface:#161B22;--surface2:#1C2128;--surface3:#21262D;
+  --border:#30363D;--border2:#484F58;
+  --text:#E6EDF3;--muted:#8B949E;--muted2:#6E7681;
+  --accent:#22B8CF;--accent-text:#0D1117;
+  --green:#3FB950;--orange:#F0883E;--red:#F85149;--yellow:#D29922;--purple:#A371F7;--blue:#5A8DEE;
+  --nav:#161B22;--navline:#010409;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+
+/* HEADER */
+header{display:flex;flex-direction:column;background:var(--nav);position:sticky;top:0;z-index:200;border-bottom:1px solid var(--navline)}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;gap:12px}
+.logo{font-family:var(--fd);font-size:17px;font-weight:900;letter-spacing:-.02em;color:#fff;display:flex;align-items:center;gap:9px;cursor:pointer}
+.logo .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0b6e88);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff}
+.logo span{color:var(--accent);font-weight:800}
+.header-right{display:flex;align-items:center;gap:8px}
+.date-pill{font-family:var(--fm);font-size:11px;color:rgba(255,255,255,.72);padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+.hbtn{padding:6px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.78);font-size:12px;cursor:pointer;font-family:var(--fd);font-weight:600;transition:all .15s;display:flex;align-items:center;gap:5px}
+.hbtn:hover{color:#fff;border-color:var(--accent);background:rgba(255,255,255,.06)}
+
+/* NAV */
+#nav{display:flex;align-items:stretch;padding:0 12px;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
+#nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:7px;padding:10px 15px;border:none;border-bottom:2px solid transparent;background:transparent;color:rgba(255,255,255,.6);font-family:var(--fd);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab .tb-ico{font-size:14px;line-height:1}
+.tab.active{color:#fff;border-bottom-color:var(--accent);background:rgba(255,255,255,.05)}
+.tab:hover:not(.active){background:rgba(255,255,255,.07);color:#fff}
+.tab .badge{font-family:var(--fm);font-size:9px;background:var(--accent);color:var(--accent-text);border-radius:99px;padding:1px 6px;font-weight:700}
+
+/* VIEW SYSTEM */
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.vhead{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.vtitle{font-family:var(--fd);font-size:21px;font-weight:900;letter-spacing:-.01em}
+.vsub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.vhead-actions{display:flex;gap:8px;flex-wrap:wrap}
+.wrap{padding:16px 20px;max-width:1240px}
+
+/* BUTTONS */
+.btn{padding:8px 15px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--fd);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface2);border-color:var(--accent)}
+.btn.accent{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn.accent:hover{opacity:.9;background:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:11px}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;position:relative;overflow:hidden}
+.stat .k{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:var(--fd);font-size:27px;font-weight:900;margin-top:6px;line-height:1}
+.stat .v small{font-size:14px;font-weight:700;color:var(--muted)}
+.stat .sub{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--fm)}
+.stat .accentbar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px}
+
+/* SECTION */
+.sec{margin-top:22px}
+.sec-t{font-family:var(--fd);font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:11px;display:flex;align-items:center;gap:9px}
+.sec-t .line{flex:1;height:1px;background:var(--border)}
+
+/* PROGRESS BAR */
+.pbar{height:7px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s ease}
+
+/* GENERIC BOARD */
+.board-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pill{padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--fd);font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.pill.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.pill:hover:not(.active){background:var(--surface2);color:var(--text)}
+.pill .dot{width:8px;height:8px;border-radius:50%}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.icard{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;overflow:hidden}
+.icard:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 5px 18px rgba(0,0,0,.08)}
+.icard.done{opacity:.55}
+.icard-top{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.prio{width:10px;height:10px;border-radius:50%;flex-shrink:0;position:relative}
+.prio::after{content:'';position:absolute;inset:-3px;border-radius:50%;animation:pglow 2.4s ease-in-out infinite;opacity:.3}
+@keyframes pglow{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.7);opacity:.08}}
+.p-high{background:#FF4D4D;box-shadow:0 0 7px 2px rgba(255,77,77,.55)}.p-high::after{background:#FF4D4D}
+.p-med{background:#E8B547;box-shadow:0 0 7px 2px rgba(232,181,71,.5)}.p-med::after{background:#E8B547}
+.p-low{background:#7B8FE8;box-shadow:0 0 6px 2px rgba(123,143,232,.4)}.p-low::after{background:#7B8FE8}
+.icard-title{font-family:var(--fd);font-size:14.5px;font-weight:800;flex:1;line-height:1.3;word-break:break-word}
+.tag{font-size:9.5px;font-weight:800;font-family:var(--fd);letter-spacing:.04em;text-transform:uppercase;padding:2px 9px;border-radius:99px;flex-shrink:0}
+.icard-note{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:9px;white-space:pre-wrap;word-break:break-word}
+.icard-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--fm);font-size:10.5px;color:var(--muted2);margin-top:auto}
+.due-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border)}
+.due-chip.overdue{color:var(--red);border-color:rgba(204,12,57,.35);background:rgba(204,12,57,.07)}
+.due-chip.soon{color:var(--orange);border-color:rgba(200,75,0,.3);background:rgba(200,75,0,.06)}
+.steps{margin:9px 0}
+.step{display:flex;align-items:flex-start;gap:9px;padding:6px 10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border);margin-bottom:5px}
+.step-cb{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;margin-top:1px}
+.step-cb.on{background:var(--green);border-color:var(--green);color:#fff}
+.step-nm{font-size:12px;flex:1;line-height:1.4;word-break:break-word}
+.step-nm.done{text-decoration:line-through;color:var(--muted2)}
+.mini-prog{font-family:var(--fm);font-size:10px;color:var(--muted);margin-top:2px}
+.empty{text-align:center;padding:52px 24px;color:var(--muted);font-size:13px}
+.empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
+
+/* SEGMENTED */
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:none;background:transparent;color:var(--muted);font-family:var(--fd);font-size:12px;font-weight:700;padding:6px 14px;border-radius:7px;cursor:pointer;transition:all .12s}
+.seg button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* FRM TABLE */
+.frm-summary{background:linear-gradient(120deg,rgba(8,145,178,.09),rgba(8,145,178,.02));border:1px solid var(--border);border-radius:14px;padding:15px 18px;font-size:13px;line-height:1.6;color:var(--text)}
+.frm-summary b{color:var(--accent);font-weight:800}
+.subj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.subj-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:14px 15px;border-left:4px solid var(--accent)}
+.subj-name{font-family:var(--fd);font-size:14px;font-weight:800;margin-bottom:2px}
+.subj-chaps{font-size:11px;color:var(--muted);font-family:var(--fm);margin-bottom:11px}
+.subj-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.subj-row .lb{font-size:10.5px;color:var(--muted);width:74px;flex-shrink:0;font-weight:700}
+.subj-row .pbar{flex:1}
+.subj-row .pc{font-family:var(--fm);font-size:10px;color:var(--muted);width:34px;text-align:right;flex-shrink:0}
+.frm-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table.frm{border-collapse:collapse;width:100%;font-size:12px;min-width:1180px}
+table.frm th{background:var(--nav);color:#fff;font-family:var(--fd);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:9px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08)}
+table.frm th.lft{text-align:left}
+table.frm td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+table.frm td.lft{text-align:left}
+table.frm tr:hover td{background:var(--surface2)}
+.subj-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:9.5px;font-weight:800;font-family:var(--fd);white-space:nowrap}
+.rt{display:inline-flex;gap:2px;align-items:center}
+.rt i{width:6px;height:6px;border-radius:50%;background:var(--border2)}
+.rt i.on{background:var(--accent)}
+.du{width:30px;height:24px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);font-family:var(--fd);font-size:11px;font-weight:800;cursor:pointer;transition:all .12s;color:var(--muted)}
+.du.d{background:var(--green);border-color:var(--green);color:#fff}
+.du:hover{border-color:var(--accent)}
+.conf-sel{display:inline-flex;gap:3px}
+.conf-sel b{width:15px;height:15px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;font-size:0;transition:all .1s}
+.conf-sel b.on{background:var(--accent);border-color:var(--accent)}
+.note-in{width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 7px;font-size:11px;color:var(--text);font-family:var(--fb);outline:none}
+.note-in:focus{border-color:var(--accent)}
+.chg-tag{font-size:9px;padding:1px 6px;border-radius:5px;font-weight:800;font-family:var(--fd)}
+.chg-Same{color:var(--muted2)}
+.chg-Changes{background:rgba(176,120,0,.16);color:var(--yellow)}
+.chg-New{background:rgba(200,75,0,.16);color:var(--orange)}
+
+/* SCHEDULE */
+.sch-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.sch-day{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px;min-height:120px}
+.sch-day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sch-dname{font-family:var(--fd);font-size:12px;font-weight:800;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.sch-dname .plus{cursor:pointer;color:var(--muted2);font-size:15px;line-height:1}
+.sch-dname .plus:hover{color:var(--accent)}
+.sch-block{border-radius:8px;padding:6px 9px;margin-bottom:6px;font-size:11px;border-left:3px solid var(--accent);background:var(--surface2);cursor:pointer;position:relative}
+.sch-block .tm{font-family:var(--fm);font-size:9.5px;color:var(--muted)}
+.sch-block .lb{font-weight:700;font-family:var(--fd);margin-top:1px;line-height:1.25}
+.sch-block .x{position:absolute;right:5px;top:5px;color:var(--muted2);font-size:11px;opacity:0}
+.sch-block:hover .x{opacity:1}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,17,17,.5);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:mIn .18s ease;display:flex;flex-direction:column;gap:13px}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal-title{font-family:var(--fd);font-size:18px;font-weight:900;color:var(--accent)}
+.modal label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px;font-weight:700}
+.modal input,.modal select,.modal textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--fb);font-size:13.5px;padding:10px 12px;outline:none;transition:border .15s}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--accent)}
+.modal textarea{resize:vertical;min-height:64px;line-height:1.5}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;align-items:center}
+.sbrow{display:flex;gap:6px;margin-bottom:6px}
+.sbrow input{flex:1}
+.sbx{background:none;border:none;cursor:pointer;color:var(--muted2);font-size:16px;padding:0 6px}
+.sbx:hover{color:var(--red)}
+.mdel{margin-right:auto;background:transparent;color:var(--red);border:1px solid rgba(204,12,57,.3);border-radius:9px;padding:9px 14px;font-family:var(--fb);font-size:13px;cursor:pointer}
+.mdel:hover{background:rgba(204,12,57,.08)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--nav);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-family:var(--fd);font-weight:700;z-index:1200;opacity:0;transition:all .3s;box-shadow:0 8px 30px rgba(0,0,0,.3);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:820px){.sch-grid{grid-template-columns:1fr 1fr}.mrow{grid-template-columns:1fr}}
+@media(max-width:560px){.sch-grid{grid-template-columns:1fr}.vhead{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <div class="logo" onclick="go('home')"><span class="mark">M</span>Student<span> Command</span></div>
+    <div class="header-right">
+      <span class="date-pill" id="datePill"></span>
+      <button class="hbtn" onclick="cloudSignIn()" id="cloudBtn" title="Sign in to sync">☁</button>
+      <button class="hbtn" onclick="hardRefresh()" title="Refresh (clears cached version)">⟳</button>
+      <button class="hbtn" onclick="openSettings()" title="Settings">⚙</button>
+      <button class="hbtn" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
+    </div>
+  </div>
+  <nav id="nav"></nav>
+</header>
+
+<main id="main">
+  <div class="view" id="v-home"></div>
+  <div class="view" id="v-frm"></div>
+  <div class="view" id="v-college"></div>
+  <div class="view" id="v-cases"></div>
+  <div class="view" id="v-intern"></div>
+  <div class="view" id="v-fma"></div>
+  <div class="view" id="v-tasks"></div>
+  <div class="view" id="v-schedule"></div>
+</main>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ FRM PART 1 STATIC CURRICULUM (from uploaded tracker) ============ */
+const FRM_CH=[{"order":1,"schedule":"Current Week","subject":"Quantitative Analysis","reading":"12-16","changes":"Same","topic":"Probability and Statistics","chapters":5,"los":37,"lengthy":3,"numeric":5,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":2194,"cum":9.8},{"order":2,"schedule":"Current Week","subject":"Quantitative Analysis","reading":"17","changes":"Changes","topic":"Hypothesis Testing","chapters":1,"los":8,"lengthy":4,"numeric":5,"diff":5,"confusing":5,"imp":4,"prac":4,"dur":449,"cum":11.8},{"order":3,"schedule":"Week 4","subject":"Foundation of Risk Mgmt","reading":"10","changes":"Same","topic":"Anatomy of the Great Financial Crisis of 2007-2009","chapters":1,"los":6,"lengthy":2,"numeric":1,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":423,"cum":13.7},{"order":4,"schedule":"Week 4","subject":"Foundation of Risk Mgmt","reading":"4","changes":"Same","topic":"Credit Risk Transfer Mechanisms","chapters":1,"los":4,"lengthy":3,"numeric":1,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":162,"cum":14.4},{"order":5,"schedule":"Week 4","subject":"Quantitative Analysis","reading":"18","changes":"Same","topic":"Linear Regression","chapters":1,"los":8,"lengthy":3,"numeric":5,"diff":4,"confusing":4,"imp":3,"prac":4,"dur":202,"cum":15.4},{"order":6,"schedule":"Week 4","subject":"Quantitative Analysis","reading":"19","changes":"Same","topic":"Regression with Multiple Explanatory Variables","chapters":1,"los":5,"lengthy":4,"numeric":4,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":348,"cum":16.9},{"order":7,"schedule":"Week 5","subject":"Quantitative Analysis","reading":"20","changes":"Same","topic":"Regression Diagnostics","chapters":1,"los":8,"lengthy":3,"numeric":4,"diff":5,"confusing":5,"imp":4,"prac":4,"dur":268,"cum":18.1},{"order":8,"schedule":"Week 5","subject":"Financial Mkts & Products","reading":"27","changes":"Same","topic":"Banks","chapters":1,"los":8,"lengthy":2,"numeric":1,"diff":3,"confusing":3,"imp":3,"prac":4,"dur":332,"cum":19.6},{"order":9,"schedule":"Week 6","subject":"Financial Mkts & Products","reading":"28","changes":"Same","topic":"Insurance Companies and Pension Plans","chapters":1,"los":9,"lengthy":3,"numeric":2,"diff":3,"confusing":4,"imp":3,"prac":4,"dur":516,"cum":21.9},{"order":10,"schedule":"Week 6","subject":"Foundation of Risk Mgmt","reading":"5","changes":"Same","topic":"Modern Portfolio Theory and the Capital Asset Pricing Model","chapters":1,"los":7,"lengthy":4,"numeric":4,"diff":4,"confusing":4,"imp":5,"prac":4,"dur":672,"cum":24.9},{"order":11,"schedule":"Week 6","subject":"Foundation of Risk Mgmt","reading":"6","changes":"Same","topic":"The Arbitrage Pricing Theory and Multifactor Models of Risk and Return","chapters":1,"los":5,"lengthy":3,"numeric":4,"diff":4,"confusing":5,"imp":4,"prac":4,"dur":235,"cum":26.0},{"order":12,"schedule":"Week 7","subject":"Financial Mkts & Products","reading":"29","changes":"Same","topic":"Fund Management","chapters":1,"los":7,"lengthy":3,"numeric":2,"diff":3,"confusing":4,"imp":3,"prac":4,"dur":405,"cum":27.8},{"order":13,"schedule":"Week 8","subject":"Quantitative Analysis","reading":"21","changes":"Changes","topic":"Stationary Time Series","chapters":1,"los":14,"lengthy":3,"numeric":3,"diff":5,"confusing":5,"imp":4,"prac":4,"dur":692,"cum":30.9},{"order":14,"schedule":"Week 8","subject":"Quantitative Analysis","reading":"22","changes":"Same","topic":"Non-Stationary Time Series","chapters":1,"los":7,"lengthy":3,"numeric":4,"diff":5,"confusing":5,"imp":4,"prac":4,"dur":346,"cum":32.4},{"order":15,"schedule":"Week 8","subject":"Quantitative Analysis","reading":"23","changes":"Same","topic":"Measuring Returns, Volatility, and Correlation","chapters":1,"los":8,"lengthy":3,"numeric":4,"diff":4,"confusing":4,"imp":3,"prac":4,"dur":146,"cum":33.1},{"order":16,"schedule":"Week 8","subject":"Financial Mkts & Products","reading":"35","changes":"Same","topic":"Foreign Exchange Markets","chapters":1,"los":12,"lengthy":3,"numeric":3,"diff":4,"confusing":5,"imp":4,"prac":4,"dur":69,"cum":33.4},{"order":17,"schedule":"Week 10","subject":"Financial Mkts & Products","reading":"30","changes":"Same","topic":"Introduction to Derivatives","chapters":1,"los":9,"lengthy":1,"numeric":2,"diff":2,"confusing":2,"imp":3,"prac":4,"dur":1339,"cum":39.4},{"order":18,"schedule":"Week 10","subject":"Financial Mkts & Products","reading":"38","changes":"Same","topic":"Options Markets","chapters":1,"los":5,"lengthy":4,"numeric":5,"diff":4,"confusing":5,"imp":5,"prac":4,"dur":160,"cum":40.1},{"order":19,"schedule":"Week 10","subject":"Financial Mkts & Products","reading":"39","changes":"Same","topic":"Properties of Options","chapters":1,"los":4,"lengthy":4,"numeric":5,"diff":4,"confusing":5,"imp":5,"prac":4,"dur":58,"cum":40.4},{"order":20,"schedule":"Week 10","subject":"Quantitative Analysis","reading":"24","changes":"Same","topic":"Simulation and Bootstrapping","chapters":1,"los":7,"lengthy":3,"numeric":1,"diff":4,"confusing":5,"imp":3,"prac":4,"dur":380,"cum":42.1},{"order":21,"schedule":"Week 11","subject":"Quantitative Analysis","reading":"25","changes":"Same","topic":"Machine Learning Methods","chapters":1,"los":9,"lengthy":3,"numeric":1,"diff":4,"confusing":5,"imp":3,"prac":4,"dur":425,"cum":44.0},{"order":22,"schedule":"Week 11","subject":"Quantitative Analysis","reading":"26","changes":"Same","topic":"Machine Learning and Prediction","chapters":1,"los":9,"lengthy":3,"numeric":1,"diff":4,"confusing":5,"imp":3,"prac":4,"dur":355,"cum":45.5},{"order":23,"schedule":"Week 11","subject":"Financial Mkts & Products","reading":"36","changes":"Same","topic":"Pricing Financial Forwards and Futures","chapters":1,"los":8,"lengthy":4,"numeric":5,"diff":4,"confusing":5,"imp":5,"prac":4,"dur":128,"cum":46.1},{"order":24,"schedule":"Week 11","subject":"Financial Mkts & Products","reading":"37","changes":"Same","topic":"Commodity Forwards and Futures","chapters":1,"los":11,"lengthy":4,"numeric":4,"diff":4,"confusing":4,"imp":5,"prac":5,"dur":246,"cum":47.2},{"order":25,"schedule":"Week 11","subject":"Financial Mkts & Products","reading":"33","changes":"Same","topic":"Futures Markets","chapters":1,"los":7,"lengthy":3,"numeric":3,"diff":3,"confusing":4,"imp":4,"prac":4,"dur":130,"cum":47.8},{"order":26,"schedule":"Week 12","subject":"Financial Mkts & Products","reading":"34","changes":"Same","topic":"Using Futures for Hedging","chapters":1,"los":8,"lengthy":3,"numeric":4,"diff":4,"confusing":4,"imp":5,"prac":5,"dur":312,"cum":49.2},{"order":27,"schedule":"Week 12","subject":"Financial Mkts & Products","reading":"31","changes":"Same","topic":"Exchanges and OTC Markets","chapters":1,"los":9,"lengthy":3,"numeric":3,"diff":3,"confusing":4,"imp":4,"prac":4,"dur":331,"cum":50.7},{"order":28,"schedule":"Week 12","subject":"Financial Mkts & Products","reading":"32","changes":"Same","topic":"Central Clearing","chapters":1,"los":9,"lengthy":2,"numeric":1,"diff":3,"confusing":4,"imp":3,"prac":4,"dur":300,"cum":52.0},{"order":29,"schedule":"Week 13","subject":"Financial Mkts & Products","reading":"40","changes":"Same","topic":"Trading Strategies","chapters":1,"los":4,"lengthy":4,"numeric":5,"diff":4,"confusing":5,"imp":4,"prac":4,"dur":273,"cum":53.2},{"order":30,"schedule":"Week 13","subject":"Valuation & Risk Models","reading":"60","changes":"Same","topic":"Binomial Trees","chapters":1,"los":5,"lengthy":3,"numeric":5,"diff":4,"confusing":5,"imp":5,"prac":4,"dur":107,"cum":53.7},{"order":31,"schedule":"Week 13","subject":"Valuation & Risk Models","reading":"61","changes":"Same","topic":"The Black-Scholes-Merton Model","chapters":1,"los":8,"lengthy":3,"numeric":5,"diff":5,"confusing":5,"imp":5,"prac":4,"dur":367,"cum":55.4},{"order":32,"schedule":"Week 14","subject":"Valuation & Risk Models","reading":"62","changes":"Same","topic":"Option Sensitivity Measures-The Greeks","chapters":1,"los":9,"lengthy":4,"numeric":3,"diff":5,"confusing":5,"imp":5,"prac":5,"dur":606,"cum":58.1},{"order":33,"schedule":"Week 14","subject":"Financial Mkts & Products","reading":"41","changes":"Same","topic":"Exotic Options","chapters":1,"los":7,"lengthy":4,"numeric":3,"diff":5,"confusing":5,"imp":3,"prac":4,"dur":360,"cum":59.7},{"order":34,"schedule":"Week 14","subject":"Foundation of Risk Mgmt","reading":"11","changes":"Same","topic":"GARP Code of Conduct","chapters":1,"los":2,"lengthy":2,"numeric":1,"diff":2,"confusing":3,"imp":4,"prac":4,"dur":174,"cum":60.5},{"order":35,"schedule":"Week 15","subject":"Foundation of Risk Mgmt","reading":"7","changes":"Same","topic":"Principles for Effective Data Aggregation and Risk Reporting","chapters":1,"los":4,"lengthy":2,"numeric":1,"diff":2,"confusing":4,"imp":2,"prac":3,"dur":278,"cum":61.7},{"order":36,"schedule":"Week 15","subject":"Financial Mkts & Products","reading":"42","changes":"Same","topic":"Properties of Interest Rates","chapters":1,"los":11,"lengthy":3,"numeric":4,"diff":4,"confusing":5,"imp":5,"prac":4,"dur":103,"cum":62.2},{"order":37,"schedule":"Week 15","subject":"Valuation & Risk Models","reading":"56","changes":"Same","topic":"Interest Rates","chapters":1,"los":8,"lengthy":4,"numeric":4,"diff":4,"confusing":4,"imp":5,"prac":4,"dur":331,"cum":63.7},{"order":38,"schedule":"Week 16","subject":"Valuation & Risk Models","reading":"55-57","changes":"Same","topic":"Pricing Conventions, Discounting, and Arbitrage","chapters":3,"los":16,"lengthy":4,"numeric":4,"diff":4,"confusing":4,"imp":5,"prac":4,"dur":1184,"cum":69.0},{"order":39,"schedule":"Week 17","subject":"Valuation & Risk Models","reading":"58","changes":"Same","topic":"Applying Duration, Convexity, and DV01","chapters":1,"los":9,"lengthy":5,"numeric":4,"diff":5,"confusing":5,"imp":5,"prac":4,"dur":808,"cum":72.6},{"order":40,"schedule":"Week 17","subject":"Valuation & Risk Models","reading":"59","changes":"Same","topic":"Modeling Non-Parallel Term Structure Shifts and Hedging","chapters":1,"los":7,"lengthy":3,"numeric":2,"diff":5,"confusing":5,"imp":3,"prac":4,"dur":295,"cum":73.9},{"order":41,"schedule":"Week 18","subject":"Financial Mkts & Products","reading":"43","changes":"Same","topic":"Corporate Bonds","chapters":1,"los":9,"lengthy":3,"numeric":2,"diff":3,"confusing":3,"imp":3,"prac":4,"dur":389,"cum":75.6},{"order":42,"schedule":"Week 18","subject":"Financial Mkts & Products","reading":"44","changes":"Same","topic":"Mortgages and Mortgage-Backed Securities","chapters":1,"los":10,"lengthy":4,"numeric":3,"diff":5,"confusing":5,"imp":4,"prac":4,"dur":493,"cum":77.8},{"order":43,"schedule":"Week 19","subject":"Financial Mkts & Products","reading":"45","changes":"Same","topic":"Interest Rate Futures","chapters":1,"los":9,"lengthy":4,"numeric":4,"diff":4,"confusing":5,"imp":5,"prac":5,"dur":321,"cum":79.3},{"order":44,"schedule":"Week 19","subject":"Financial Mkts & Products","reading":"46","changes":"Same","topic":"Swaps","chapters":1,"los":13,"lengthy":4,"numeric":5,"diff":5,"confusing":5,"imp":4,"prac":5,"dur":396,"cum":81.1},{"order":45,"schedule":"Week 19","subject":"Valuation & Risk Models","reading":"51","changes":"Same","topic":"Country Risk-Determinants, Measures, and Implications","chapters":1,"los":6,"lengthy":2,"numeric":1,"diff":2,"confusing":2,"imp":2,"prac":3,"dur":381,"cum":82.8},{"order":46,"schedule":"Week 20","subject":"Valuation & Risk Models","reading":"50","changes":"Same","topic":"External and Internal Credit Ratings","chapters":1,"los":10,"lengthy":4,"numeric":3,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":357,"cum":84.4},{"order":47,"schedule":"Week 20","subject":"Foundation of Risk Mgmt","reading":"1","changes":"Same","topic":"The Building Blocks of Risk Management","chapters":1,"los":6,"lengthy":4,"numeric":2,"diff":3,"confusing":3,"imp":3,"prac":3,"dur":321,"cum":85.8},{"order":48,"schedule":"Week 20","subject":"Valuation & Risk Models","reading":"47","changes":"Same","topic":"Measures of Financial Risk","chapters":1,"los":6,"lengthy":3,"numeric":3,"diff":4,"confusing":5,"imp":4,"prac":4,"dur":219,"cum":86.8},{"order":49,"schedule":"Week 21","subject":"Valuation & Risk Models","reading":"48","changes":"Same","topic":"Calculating and Applying VaR","chapters":1,"los":8,"lengthy":3,"numeric":3,"diff":4,"confusing":4,"imp":5,"prac":5,"dur":339,"cum":88.3},{"order":50,"schedule":"Week 21","subject":"Valuation & Risk Models","reading":"49","changes":"Same","topic":"Measuring and Monitoring Volatility","chapters":1,"los":9,"lengthy":4,"numeric":3,"diff":5,"confusing":5,"imp":5,"prac":5,"dur":417,"cum":90.2},{"order":51,"schedule":"Week 22","subject":"Valuation & Risk Models","reading":"54","changes":"Same","topic":"Stress Testing","chapters":1,"los":8,"lengthy":2,"numeric":1,"diff":3,"confusing":3,"imp":3,"prac":3,"dur":441,"cum":92.1},{"order":52,"schedule":"Week 22","subject":"Valuation & Risk Models","reading":"52","changes":"Same","topic":"Measuring Credit Risk","chapters":1,"los":11,"lengthy":3,"numeric":3,"diff":4,"confusing":4,"imp":4,"prac":4,"dur":492,"cum":94.3},{"order":53,"schedule":"Week 22","subject":"Valuation & Risk Models","reading":"53","changes":"Same","topic":"Operational Risk","chapters":1,"los":10,"lengthy":5,"numeric":2,"diff":3,"confusing":4,"imp":4,"prac":4,"dur":290,"cum":95.6},{"order":54,"schedule":"Week 23","subject":"Foundation of Risk Mgmt","reading":"9","changes":"Same","topic":"Learning from Financial Disasters","chapters":1,"los":1,"lengthy":3,"numeric":1,"diff":4,"confusing":4,"imp":4,"prac":5,"dur":216,"cum":96.6},{"order":55,"schedule":"Week 23","subject":"Foundation of Risk Mgmt","reading":"8","changes":"Same","topic":"Enterprise Risk Management and Future Trends","chapters":1,"los":6,"lengthy":3,"numeric":1,"diff":2,"confusing":2,"imp":3,"prac":3,"dur":262,"cum":97.8},{"order":56,"schedule":"Week 23","subject":"Foundation of Risk Mgmt","reading":"3","changes":"Same","topic":"The Governance of Risk Management","chapters":1,"los":6,"lengthy":3,"numeric":1,"diff":2,"confusing":3,"imp":3,"prac":3,"dur":271,"cum":99.0},{"order":57,"schedule":"Week 23","subject":"Foundation of Risk Mgmt","reading":"2","changes":"Same","topic":"How Do Firms Manage Financial Risk","chapters":1,"los":5,"lengthy":3,"numeric":1,"diff":3,"confusing":3,"imp":3,"prac":3,"dur":227,"cum":100}];
+const FRM_SUBJECTS=["Foundation of Risk Mgmt","Quantitative Analysis","Financial Mkts & Products","Valuation & Risk Models"];
+const SUBJ_COLOR={"Foundation of Risk Mgmt":"#0891B2","Quantitative Analysis":"#7B5EA7","Financial Mkts & Products":"#C84B00","Valuation & Risk Models":"#007600"};
+const TOTAL_CHAPTERS=FRM_CH.reduce((s,c)=>s+c.chapters,0);
+const TOTAL_HRS=Math.round(FRM_CH.reduce((s,c)=>s+c.dur,0)/60);
+
+/* ============ STATE ============ */
+const LS_KEY='stu_dash_v1';
+const DEFAULTS={
+  settings:{name:'Mohit',college:'SGGSCC · Economics (Hons)',examDate:'2026-07-19',revDate:'2026-06-28',startDate:'2025-10-11',weekdayHrs:2.5,weekendHrs:8,theme:'light'},
+  frm:{},           // {order:{lec,ss,rev,pp,g10,geoc,conf,notes}}
+  courses:[],       // college courses
+  college_tests:[], // tests & assignments
+  cases:[], intern:[], fma:[], tasks:[],
+  schedule:[]
+};
+let S=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(LS_KEY));if(d)return Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),d);}catch(e){}return JSON.parse(JSON.stringify(DEFAULTS));}
+function save(){S._updatedAt=Date.now();localStorage.setItem(LS_KEY,JSON.stringify(S));queueCloudSave();}
+function frmState(o){if(!S.frm[o])S.frm[o]={lec:0,ss:0,rev:0,pp:0,g10:0,geoc:0,conf:0,notes:''};return S.frm[o];}
+
+/* ============ FIREBASE SYNC ============ */
+// Replace with your own project's config (Firebase console → Project settings → Your apps → SDK setup)
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyAp7JPZnsjdz9JpBovihTmULP3F92UDqRM",
+  authDomain:"student-dashboard-b001c.firebaseapp.com",
+  projectId:"student-dashboard-b001c",
+  storageBucket:"student-dashboard-b001c.firebasestorage.app",
+  messagingSenderId:"1018838335359",
+  appId:"1:1018838335359:web:79db565ae9918c541ee44a"
+};
+let cloudUser=null,cloudUnsub=null,applyingRemote=false,saveTimer=null;
+let fbApp=null,auth=null,db=null;
+try{
+  if(FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY'){
+    fbApp=firebase.initializeApp(FIREBASE_CONFIG);
+    auth=firebase.auth();db=firebase.firestore();
+    auth.getRedirectResult().catch(e=>{if(e.code!=='auth/no-auth-event')console.error('redirect result',e);});
+    auth.onAuthStateChanged(onAuthChange);
+  }
+}catch(e){console.error('Firebase init failed',e);}
+function onAuthChange(user){
+  cloudUser=user;updateCloudBtn();
+  if(cloudUnsub){cloudUnsub();cloudUnsub=null;}
+  if(!user)return;
+  const ref=db.collection('users').doc(user.uid);
+  cloudUnsub=ref.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites)return; // our own write echoing back
+    const data=snap.data();if(!data||!data.state)return;
+    const remoteTs=data.updatedAt?data.updatedAt.toMillis():0;
+    if(remoteTs>(S._updatedAt||0)){
+      applyingRemote=true;
+      S=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),data.state);
+      S._updatedAt=remoteTs;
+      localStorage.setItem(LS_KEY,JSON.stringify(S));
+      applyingRemote=false;
+      buildNav();render(current);
+      toast('Synced from cloud');
+    }
+  },e=>console.error('snapshot',e));
+}
+function cloudSignIn(){
+  if(!auth){toast('Firebase not configured yet');return;}
+  if(cloudUser){auth.signOut();toast('Signed out');return;}
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>{
+    if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/cancelled-popup-request'){
+      auth.signInWithRedirect(provider);
+    }else{
+      console.error('signin error',e);
+      toast('Sign-in error: '+(e.code||e.message));
+    }
+  });
+}
+function updateCloudBtn(){
+  const b=$('cloudBtn');if(!b)return;
+  b.textContent=cloudUser?'☁✓':'☁';
+  b.title=cloudUser?('Synced as '+(cloudUser.displayName||cloudUser.email)+' · click to sign out'):'Sign in to sync';
+}
+function queueCloudSave(){
+  if(!cloudUser||!db||applyingRemote)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    db.collection('users').doc(cloudUser.uid).set({
+      state:S,updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(e=>{console.error('cloud save',e);toast('Cloud save error: '+(e.code||e.message));});
+  },800);
+}
+
+/* ============ UTIL ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function today(){const d=new Date();return d.toISOString().slice(0,10);}
+function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');return d.getDate()+' '+MONTHS[d.getMonth()]+' '+String(d.getFullYear()).slice(2);}
+function daysBetween(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);}
+function dueMeta(due){if(!due)return{cls:'',txt:''};const d=daysBetween(today(),due);if(d<0)return{cls:'overdue',txt:Math.abs(d)+'d overdue'};if(d===0)return{cls:'soon',txt:'due today'};if(d<=3)return{cls:'soon',txt:'in '+d+'d'};return{cls:'',txt:fmtDate(due)};}
+function hhmm(mins){const h=Math.floor(mins/60),m=Math.round(mins%60);return h+':'+String(m).padStart(2,'0');}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function rating(v,color){v=+v||0;let h='<span class="rt">';for(let i=1;i<=5;i++)h+='<i class="'+(i<=v?'on':'')+'"'+(i<=v&&color?' style="background:'+color+'"':'')+'></i>';return h+'</span>';}
+
+/* ============ NAV / ROUTER ============ */
+const NAV=[
+  {id:'home',ico:'◉',label:'Home'},
+  {id:'frm',ico:'∑',label:'FRM P-1'},
+  {id:'college',ico:'▣',label:'College'},
+  {id:'cases',ico:'◆',label:'Case Comps'},
+  {id:'intern',ico:'⬢',label:'Internship'},
+  {id:'fma',ico:'✦',label:'FMA'},
+  {id:'tasks',ico:'✓',label:'Tasks'},
+  {id:'schedule',ico:'▦',label:'Schedule'}
+];
+let current='home';
+function buildNav(){
+  $('nav').innerHTML=NAV.map(n=>{
+    let badge='';
+    if(n.id==='frm'){const p=frmOverall();badge='<span class="badge">'+p+'%</span>';}
+    else{const c=pendingCount(n.id);if(c)badge='<span class="badge">'+c+'</span>';}
+    return '<button class="tab'+(n.id===current?' active':'')+'" onclick="go(\''+n.id+'\')"><span class="tb-ico">'+n.ico+'</span>'+n.label+badge+'</button>';
+  }).join('');
+}
+function pendingCount(id){
+  if(id==='college'){return S.college_tests.filter(t=>t.status!=='done').length;}
+  const map={cases:'cases',intern:'intern',fma:'fma',tasks:'tasks'};
+  if(map[id])return S[map[id]].filter(t=>t.status!=='done').length;
+  return 0;
+}
+function go(id){current=id;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('v-'+id).classList.add('active');buildNav();render(id);window.scrollTo(0,0);}
+function render(id){({home:renderHome,frm:renderFRM,college:renderCollege,cases:()=>renderBoard('cases'),intern:()=>renderBoard('intern'),fma:()=>renderBoard('fma'),tasks:()=>renderBoard('tasks'),schedule:renderSchedule}[id])();}
+
+/* ============ FRM CALCS ============ */
+function frmOverall(){let done=0;FRM_CH.forEach(c=>{const st=S.frm[c.order];if(st&&st.lec)done++;});return Math.round(done/FRM_CH.length*100);}
+function subjStats(sub){
+  const rows=FRM_CH.filter(c=>c.subject===sub);const n=rows.length;
+  let lec=0,ss=0,rev=0,prac=0,conf=0,cn=0;
+  rows.forEach(c=>{const s=S.frm[c.order]||{};lec+=s.lec?1:0;ss+=s.ss?1:0;rev+=s.rev?1:0;prac+=((s.pp?1:0)+(s.g10?1:0))/2;if(s.conf){conf+=s.conf;cn++;}});
+  return{n,lec:Math.round(lec/n*100),ss:Math.round(ss/n*100),rev:Math.round(rev/n*100),prac:Math.round(prac/n*100),conf:cn?(conf/cn).toFixed(1):'—'};
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const hr=new Date().getHours();const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  const dExam=daysBetween(today(),S.settings.examDate);
+  const frmPct=frmOverall();
+  // aggregate deadlines across modules
+  const deadlines=[];
+  const push=(arr,tag,col)=>arr.forEach(t=>{if(t.due&&t.status!=='done')deadlines.push({title:t.title,due:t.due,tag,col});});
+  push(S.college_tests,'College','#3B6FD4');push(S.cases,'Case Comp','#C84B00');
+  push(S.intern,'Internship','#007600');push(S.fma,'FMA','#7B5EA7');push(S.tasks,'Task','#0891B2');
+  deadlines.sort((a,b)=>a.due<b.due?-1:1);
+  const dueToday=deadlines.filter(d=>d.due===today()).length;
+  const openTasks=[S.college_tests,S.cases,S.intern,S.fma,S.tasks].reduce((s,a)=>s+a.filter(t=>t.status!=='done').length,0);
+  // today schedule
+  const dow=new Date().getDay();
+  const todayBlocks=S.schedule.filter(b=>b.day===dow).sort((a,b)=>a.start<b.start?-1:1);
+
+  $('v-home').innerHTML=`
+  <div class="vhead"><div><div class="vtitle">${greet}, ${esc(S.settings.name)} 👋</div>
+  <div class="vsub">${DAYS[dow]}, ${fmtDate(today())} · ${esc(S.settings.college)}</div></div></div>
+  <div class="wrap">
+    <div class="stat-grid">
+      <div class="stat"><span class="accentbar" style="background:var(--accent)"></span><div class="k">FRM Part 1 syllabus</div><div class="v">${frmPct}<small>%</small></div><div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:${frmPct}%"></div></div></div>
+      <div class="stat"><span class="accentbar" style="background:${dExam<30?'var(--red)':'var(--orange)'}"></span><div class="k">Days to FRM exam</div><div class="v">${dExam>0?dExam:'—'}</div><div class="sub">${fmtDate(S.settings.examDate)}</div></div>
+      <div class="stat"><span class="accentbar" style="background:var(--blue)"></span><div class="k">Due today</div><div class="v">${dueToday}</div><div class="sub">${openTasks} open items total</div></div>
+      <div class="stat"><span class="accentbar" style="background:var(--purple)"></span><div class="k">Case comps live</div><div class="v">${S.cases.filter(c=>c.status!=='done').length}</div><div class="sub">${S.fma.filter(f=>f.status!=='done').length} FMA items open</div></div>
+    </div>
+
+    <div class="sec"><div class="sec-t">Upcoming deadlines<span class="line"></span></div>
+      ${deadlines.length?`<div class="card-grid">${deadlines.slice(0,8).map(d=>{const m=dueMeta(d.due);return`<div class="icard" style="cursor:default"><div class="icard-top"><span class="tag" style="background:${d.col}1e;color:${d.col}">${d.tag}</span></div><div class="icard-title" style="font-size:13.5px;margin-bottom:8px">${esc(d.title)}</div><div class="icard-meta"><span class="due-chip ${m.cls}">📅 ${m.txt}</span></div></div>`;}).join('')}</div>`:`<div class="empty"><div class="big">📭</div>No upcoming deadlines. Add tests, competitions or tasks to see them here.</div>`}
+    </div>
+
+    <div class="sec"><div class="sec-t">FRM subject progress<span class="line"></span><button class="btn sm ghost" onclick="go('frm')">Open tracker →</button></div>
+      <div class="subj-grid">${FRM_SUBJECTS.map(s=>{const st=subjStats(s);const col=SUBJ_COLOR[s];return`<div class="subj-card" style="border-left-color:${col}"><div class="subj-name">${esc(s)}</div><div class="subj-chaps">${st.lec}% lectures · conf ${st.conf}/5</div><div class="subj-row"><span class="lb">Lectures</span><div class="pbar"><div class="pbar-fill" style="width:${st.lec}%;background:${col}"></div></div><span class="pc">${st.lec}%</span></div><div class="subj-row"><span class="lb">Revision</span><div class="pbar"><div class="pbar-fill" style="width:${st.rev}%;background:${col}"></div></div><span class="pc">${st.rev}%</span></div></div>`;}).join('')}</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">Today's schedule · ${DAYS[dow]}<span class="line"></span><button class="btn sm ghost" onclick="go('schedule')">Plan week →</button></div>
+      ${todayBlocks.length?todayBlocks.map(b=>`<div class="sch-block" style="border-left-color:${b.color};max-width:420px"><div class="tm">${b.start} – ${b.end}</div><div class="lb">${esc(b.label)}</div></div>`).join(''):`<div class="empty" style="padding:32px"><div class="big">🗓</div>Nothing scheduled today.</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============ FRM VIEW ============ */
+let frmFilter='all';
+function renderFRM(){
+  const dExam=daysBetween(today(),S.settings.examDate);
+  const pct=frmOverall();
+  const subs=['all',...FRM_SUBJECTS];
+  const pills=subs.map(s=>{const active=frmFilter===s;const col=s==='all'?'var(--accent)':SUBJ_COLOR[s];const label=s==='all'?'All chapters':s;const cnt=s==='all'?FRM_CH.length:FRM_CH.filter(c=>c.subject===s).length;return`<button class="pill${active?' active':''}" onclick="setFrmFilter('${s.replace(/'/g,"\\'")}')"><span class="dot" style="background:${col}"></span>${esc(label)} (${cnt})</button>`;}).join('');
+  const rows=FRM_CH.filter(c=>frmFilter==='all'||c.subject===frmFilter);
+
+  $('v-frm').innerHTML=`
+  <div class="vhead"><div><div class="vtitle">FRM Part 1 — Performance Tracker</div><div class="vsub">Aswini Bajaj curriculum · ${FRM_CH.length} readings · ${TOTAL_CHAPTERS} chapters · ${TOTAL_HRS} lecture hrs</div></div>
+    <div class="vhead-actions"><button class="btn" onclick="exportFRM()">⬇ Export .xlsx</button></div></div>
+  <div class="wrap">
+    <div class="frm-summary"><b>${esc(S.settings.name)}</b>, you have <b>${dExam>0?dExam:0} days</b> until the exam (${fmtDate(S.settings.examDate)}) to complete <b>${TOTAL_CHAPTERS} chapters</b> &amp; <b>${TOTAL_HRS} hrs</b> of lectures. Target: <b>${S.settings.weekdayHrs} hrs</b> on weekdays and <b>${S.settings.weekendHrs} hrs</b> on weekends. Overall lectures done: <b>${pct}%</b>.</div>
+
+    <div class="sec"><div class="sec-t">Subject scorecards<span class="line"></span></div>
+      <div class="subj-grid">${FRM_SUBJECTS.map(s=>{const st=subjStats(s);const col=SUBJ_COLOR[s];const mk=(lb,v)=>`<div class="subj-row"><span class="lb">${lb}</span><div class="pbar"><div class="pbar-fill" style="width:${v}%;background:${col}"></div></div><span class="pc">${v}%</span></div>`;return`<div class="subj-card" style="border-left-color:${col}"><div class="subj-name">${esc(s)}</div><div class="subj-chaps">${st.n} readings · confidence ${st.conf}/5</div>${mk('Lectures',st.lec)}${mk('Self study',st.ss)}${mk('Practice',st.prac)}${mk('Revision',st.rev)}</div>`;}).join('')}</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">Chapter tracker<span class="line"></span></div>
+      <div class="board-toolbar">${pills}</div>
+      <div class="frm-table-wrap"><table class="frm"><thead><tr>
+        <th>#</th><th class="lft">Subject</th><th>Read</th><th class="lft">Topic</th><th>LOS</th>
+        <th>Len</th><th>Num</th><th>Diff</th><th>Conf</th><th>Imp</th><th>Prac</th><th>Dur</th>
+        <th>Lec</th><th>Self</th><th>Rev</th><th>Pool</th><th>10Yr</th><th>EOC</th><th>Confidence</th><th class="lft">Notes</th>
+      </tr></thead><tbody>
+      ${rows.map(c=>frmRow(c)).join('')}
+      </tbody></table></div>
+      <div class="vsub" style="margin-top:8px">Tap a status cell to toggle <b>U</b>ndone ⇄ <b>D</b>one. Lec = Lectures · Self = Self-study · Rev = Revision · Pool = Practice Pool · 10Yr = GARP 10-Yr Papers · EOC = GARP EOC Questions.</div>
+    </div>
+  </div>`;
+}
+function setFrmFilter(s){frmFilter=s;renderFRM();}
+function frmRow(c){
+  const st=frmState(c.order);const col=SUBJ_COLOR[c.subject];
+  const du=(k)=>`<td><button class="du ${st[k]?'d':''}" onclick="frmToggle(${c.order},'${k}')">${st[k]?'D':'U'}</button></td>`;
+  const chg=c.changes||'Same';
+  const cval=(typeof c.confusing==='number')?c.confusing:0;
+  return `<tr>
+    <td style="font-family:var(--fm);color:var(--muted)">${c.order}</td>
+    <td class="lft"><span class="subj-tag" style="background:${col}1e;color:${col}">${esc(c.subject.replace('Foundation of Risk Mgmt','FRM').replace('Quantitative Analysis','Quant').replace('Financial Mkts & Products','FMP').replace('Valuation & Risk Models','VRM'))}</span></td>
+    <td style="font-family:var(--fm)">${esc(c.reading)}</td>
+    <td class="lft" style="max-width:230px"><div style="font-weight:700;line-height:1.3">${esc(c.topic)}</div><span class="chg-tag chg-${chg}">${chg==='Same'?'':chg}</span></td>
+    <td style="font-family:var(--fm);color:var(--muted)">${c.los}</td>
+    <td>${rating(c.lengthy)}</td><td>${rating(c.numeric)}</td><td>${rating(c.diff)}</td><td>${rating(cval)}</td><td>${rating(c.imp)}</td><td>${rating(c.prac)}</td>
+    <td style="font-family:var(--fm);font-size:10px;color:var(--muted)">${hhmm(c.dur)}</td>
+    ${du('lec')}${du('ss')}${du('rev')}${du('pp')}${du('g10')}${du('geoc')}
+    <td>${confSel(c.order,st.conf)}</td>
+    <td class="lft"><input class="note-in" value="${esc(st.notes)}" placeholder="notes…" onchange="frmNote(${c.order},this.value)"></td>
+  </tr>`;
+}
+function confSel(o,v){let h='<div class="conf-sel">';for(let i=1;i<=5;i++)h+=`<b class="${i<=v?'on':''}" title="${i}" onclick="frmConf(${o},${i})"></b>`;return h+'</div>';}
+function frmToggle(o,k){const st=frmState(o);st[k]=st[k]?0:1;save();renderFRM();buildNav();}
+function frmConf(o,v){const st=frmState(o);st.conf=(st.conf===v)?0:v;save();renderFRM();}
+function frmNote(o,v){frmState(o).notes=v;save();}
+
+/* ============ GENERIC BOARD ============ */
+const BOARD_CFG={
+  college_tests:{title:'Tests & Assignments',sub:'Exams, quizzes, submissions & deadlines',view:'college',
+    cats:[{id:'test',name:'Test / Exam',color:'#CC0C39'},{id:'assign',name:'Assignment',color:'#3B6FD4'},{id:'quiz',name:'Quiz',color:'#B07800'},{id:'project',name:'Project',color:'#7B5EA7'},{id:'reading',name:'Reading',color:'#007600'}]},
+  cases:{title:'Case Competitions',sub:'Track competitions, rounds, teams & submission dates',view:'cases',
+    cats:[{id:'ongoing',name:'Ongoing',color:'#0891B2'},{id:'shortlist',name:'Shortlisting',color:'#B07800'},{id:'submitted',name:'Submitted',color:'#3B6FD4'},{id:'finale',name:'Finale',color:'#C84B00'},{id:'result',name:'Awaiting result',color:'#7B5EA7'}]},
+  intern:{title:'Internship',sub:'Recurring tasks & deliverables',view:'intern',recur:true,
+    cats:[{id:'daily',name:'Daily',color:'#0891B2'},{id:'weekly',name:'Weekly',color:'#3B6FD4'},{id:'deliverable',name:'Deliverable',color:'#C84B00'},{id:'meeting',name:'Meeting',color:'#7B5EA7'}]},
+  fma:{title:'FMA — Finance & Management Association',sub:'Director of Research · society work',view:'fma',
+    cats:[{id:'research',name:'Research',color:'#0891B2'},{id:'content',name:'Content',color:'#C84B00'},{id:'event',name:'Event',color:'#B07800'},{id:'team',name:'Team',color:'#7B5EA7'},{id:'admin',name:'Admin',color:'#565959'}]},
+  tasks:{title:'Personal Tasks',sub:'Everything else on your plate',view:'tasks',
+    cats:[{id:'personal',name:'Personal',color:'#0891B2'},{id:'health',name:'Health',color:'#007600'},{id:'errand',name:'Errand',color:'#B07800'},{id:'finance',name:'Finance',color:'#3B6FD4'},{id:'idea',name:'Idea',color:'#7B5EA7'}]}
+};
+let boardFilter={};
+function catOf(coll,id){return BOARD_CFG[coll].cats.find(c=>c.id===id)||{name:'—',color:'#8D9494'};}
+function renderBoard(coll){
+  const cfg=BOARD_CFG[coll];const items=S[coll];const f=boardFilter[coll]||'all';
+  const open=items.filter(t=>t.status!=='done').length,done=items.length-open;
+  const pills=`<button class="pill${f==='all'?' active':''}" onclick="setBoardFilter('${coll}','all')">All (${items.length})</button>`+
+    cfg.cats.map(c=>{const n=items.filter(t=>t.cat===c.id).length;return`<button class="pill${f===c.id?' active':''}" onclick="setBoardFilter('${coll}','${c.id}')"><span class="dot" style="background:${c.color}"></span>${esc(c.name)} (${n})</button>`;}).join('')+
+    `<button class="pill${f==='done'?' active':''}" onclick="setBoardFilter('${coll}','done')">✓ Done (${done})</button>`;
+  let list=items.slice();
+  if(f==='done')list=list.filter(t=>t.status==='done');
+  else{list=list.filter(t=>t.status!=='done');if(f!=='all')list=list.filter(t=>t.cat===f);}
+  list.sort((a,b)=>{const ad=a.due||'9999',bd=b.due||'9999';return ad<bd?-1:ad>bd?1:0;});
+  $('v-'+coll).innerHTML=`
+  <div class="vhead"><div><div class="vtitle">${esc(cfg.title)}</div><div class="vsub">${esc(cfg.sub)} · ${open} open</div></div>
+    <div class="vhead-actions"><button class="btn accent" onclick="openItem('${coll}')">+ New</button></div></div>
+  <div class="wrap">
+    <div class="board-toolbar">${pills}</div>
+    ${list.length?`<div class="card-grid">${list.map(t=>itemCard(coll,t)).join('')}</div>`:`<div class="empty"><div class="big">🗂</div>Nothing here yet. Hit <b>+ New</b> to add your first item.</div>`}
+  </div>`;
+}
+function setBoardFilter(coll,f){boardFilter[coll]=f;renderBoard(coll);}
+function itemCard(coll,t){
+  const cfg=BOARD_CFG[coll];const cat=catOf(coll,t.cat);const m=dueMeta(t.due);
+  const steps=t.steps||[];const sdone=steps.filter(s=>s.done).length;
+  return `<div class="icard${t.status==='done'?' done':''}" onclick="openItem('${coll}','${t.id}')">
+    <div class="icard-top"><span class="prio p-${t.priority||'med'}"></span>
+      <span class="icard-title">${esc(t.title)}</span>
+      <span class="tag" style="background:${cat.color}1e;color:${cat.color}">${esc(cat.name)}</span></div>
+    ${t.note?`<div class="icard-note">${esc(t.note)}</div>`:''}
+    ${steps.length?`<div class="steps" onclick="event.stopPropagation()">${steps.map((s,i)=>`<div class="step"><button class="step-cb ${s.done?'on':''}" onclick="toggleStep('${coll}','${t.id}',${i})">${s.done?'✓':''}</button><span class="step-nm ${s.done?'done':''}">${esc(s.name)}</span></div>`).join('')}<div class="mini-prog">${sdone}/${steps.length} steps done</div></div>`:''}
+    <div class="icard-meta">
+      ${t.due?`<span class="due-chip ${m.cls}">📅 ${m.txt}</span>`:''}
+      ${t.recur?`<span class="due-chip">↻ ${esc(t.recur)}</span>`:''}
+      ${t.status==='done'?`<span class="due-chip" style="color:var(--green)">✓ done</span>`:t.status==='doing'?`<span class="due-chip" style="color:var(--accent)">● in progress</span>`:''}
+    </div>
+  </div>`;
+}
+function toggleStep(coll,id,i){const t=S[coll].find(x=>x.id===id);t.steps[i].done=!t.steps[i].done;save();renderBoard(coll);}
+
+/* ============ COLLEGE (courses + tests board) ============ */
+let collegeTab='courses';
+function renderCollege(){
+  $('v-college').innerHTML=`
+  <div class="vhead"><div><div class="vtitle">College</div><div class="vsub">${esc(S.settings.college)}</div></div>
+    <div class="vhead-actions"><div class="seg"><button class="${collegeTab==='courses'?'active':''}" onclick="setCollegeTab('courses')">Courses</button><button class="${collegeTab==='tests'?'active':''}" onclick="setCollegeTab('tests')">Tests &amp; Assignments</button></div></div></div>
+  <div class="wrap" id="college-body"></div>`;
+  if(collegeTab==='courses')renderCourses();else renderCollegeTests();
+}
+function setCollegeTab(t){collegeTab=t;renderCollege();}
+function renderCourses(){
+  const b=$('college-body');const c=S.courses;
+  b.innerHTML=`<div class="board-toolbar"><button class="btn accent" onclick="openCourse()">+ Add course</button></div>
+  ${c.length?`<div class="card-grid">${c.map(courseCard).join('')}</div>`:`<div class="empty"><div class="big">📚</div>Add your semester courses to track topics and study progress.</div>`}`;
+}
+function courseCard(c){
+  const t=c.topics||[];const done=t.filter(x=>x.done).length;const pct=t.length?Math.round(done/t.length*100):0;
+  return `<div class="icard" onclick="openCourse('${c.id}')" style="border-left:4px solid ${c.color}">
+    <div class="icard-top"><span class="icard-title">${esc(c.name)}</span>${c.code?`<span class="tag" style="background:${c.color}1e;color:${c.color}">${esc(c.code)}</span>`:''}</div>
+    ${c.prof?`<div class="icard-note">👤 ${esc(c.prof)}</div>`:''}
+    <div class="pbar" style="margin:4px 0 6px"><div class="pbar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+    <div class="mini-prog">${done}/${t.length} topics · ${pct}%</div>
+    ${t.length?`<div class="steps" onclick="event.stopPropagation()">${t.map((x,i)=>`<div class="step"><button class="step-cb ${x.done?'on':''}" onclick="toggleTopic('${c.id}',${i})">${x.done?'✓':''}</button><span class="step-nm ${x.done?'done':''}">${esc(x.name)}</span></div>`).join('')}</div>`:''}
+  </div>`;
+}
+function toggleTopic(id,i){const c=S.courses.find(x=>x.id===id);c.topics[i].done=!c.topics[i].done;save();renderCourses();}
+function renderCollegeTests(){
+  const coll='college_tests';const cfg=BOARD_CFG[coll];const items=S[coll];const f=boardFilter[coll]||'all';
+  const open=items.filter(t=>t.status!=='done').length,done=items.length-open;
+  const pills=`<button class="pill${f==='all'?' active':''}" onclick="setBoardFilter('${coll}','all')">All (${items.length})</button>`+
+    cfg.cats.map(c=>{const n=items.filter(t=>t.cat===c.id).length;return`<button class="pill${f===c.id?' active':''}" onclick="setBoardFilter('${coll}','${c.id}')"><span class="dot" style="background:${c.color}"></span>${esc(c.name)} (${n})</button>`;}).join('')+
+    `<button class="pill${f==='done'?' active':''}" onclick="setBoardFilter('${coll}','done')">✓ Done (${done})</button>`;
+  let list=items.slice();
+  if(f==='done')list=list.filter(t=>t.status==='done');else{list=list.filter(t=>t.status!=='done');if(f!=='all')list=list.filter(t=>t.cat===f);}
+  list.sort((a,b)=>{const ad=a.due||'9999',bd=b.due||'9999';return ad<bd?-1:ad>bd?1:0;});
+  $('college-body').innerHTML=`<div class="board-toolbar" style="width:100%"><button class="btn accent" onclick="openItem('${coll}')">+ New</button>${pills}</div>
+  ${list.length?`<div class="card-grid">${list.map(t=>itemCard(coll,t)).join('')}</div>`:`<div class="empty"><div class="big">📝</div>No tests or assignments yet.</div>`}`;
+}
+function renderCollegeBody(){if(collegeTab==='courses')renderCourses();else renderCollegeTests();}
+
+/* ============ SCHEDULE ============ */
+function renderSchedule(){
+  const dow=new Date().getDay();
+  const cols=[1,2,3,4,5,6,0]; // Mon..Sun
+  $('v-schedule').innerHTML=`
+  <div class="vhead"><div><div class="vtitle">Weekly Schedule</div><div class="vsub">Block out study, classes, work & routines</div></div>
+    <div class="vhead-actions"><button class="btn ghost sm" onclick="clearSchedule()">Clear all</button></div></div>
+  <div class="wrap"><div class="sch-grid">
+    ${cols.map(d=>{const blocks=S.schedule.filter(b=>b.day===d).sort((a,b)=>a.start<b.start?-1:1);
+      return`<div class="sch-day${d===dow?' today':''}"><div class="sch-dname">${DAYS[d]}<span class="plus" onclick="openBlock(${d})" title="Add block">＋</span></div>
+      ${blocks.map(b=>`<div class="sch-block" style="border-left-color:${b.color}" onclick="openBlock(${d},'${b.id}')"><span class="x" onclick="event.stopPropagation();delBlock('${b.id}')">✕</span><div class="tm">${b.start} – ${b.end}</div><div class="lb">${esc(b.label)}</div></div>`).join('')||'<div style="font-size:11px;color:var(--muted2);padding:6px 2px">—</div>'}
+      </div>`;}).join('')}
+  </div></div>`;
+}
+function delBlock(id){S.schedule=S.schedule.filter(b=>b.id!==id);save();renderSchedule();}
+function clearSchedule(){if(confirm('Remove all schedule blocks?')){S.schedule=[];save();renderSchedule();}}
+
+/* ============ MODALS ============ */
+function openModal(html){$('modal').innerHTML=html;$('overlay').classList.add('open');}
+function closeModal(){$('overlay').classList.remove('open');}
+$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+let _stepBuf=[];
+function stepBuilderHTML(){return `<div id="stepBuilder">${_stepBuf.map((s,i)=>`<div class="sbrow"><input value="${esc(s)}" oninput="_stepBuf[${i}]=this.value" placeholder="Step / checklist item"><button class="sbx" onclick="_stepBuf.splice(${i},1);refreshSteps()">✕</button></div>`).join('')}</div><button class="btn sm ghost" onclick="_stepBuf.push('');refreshSteps()">+ Add step</button>`;}
+function refreshSteps(){$('stepBuilder').outerHTML=stepBuilderHTML().split('<button')[0];const sb=$('sbWrap');if(sb)sb.innerHTML=stepBuilderHTML();}
+
+function openItem(coll,id){
+  const cfg=BOARD_CFG[coll];const t=id?S[coll].find(x=>x.id===id):null;
+  _stepBuf=t&&t.steps?t.steps.map(s=>s.name):[];
+  const catOpts=cfg.cats.map(c=>`<option value="${c.id}"${t&&t.cat===c.id?' selected':''}>${esc(c.name)}</option>`).join('');
+  openModal(`
+    <div class="modal-title">${t?'Edit':'New'} · ${esc(cfg.title.split('—')[0].trim())}</div>
+    <div><label>Title</label><input id="m-title" value="${t?esc(t.title):''}" placeholder="What needs doing?"></div>
+    <div><label>Notes</label><textarea id="m-note" placeholder="Details, context, links…">${t?esc(t.note||''):''}</textarea></div>
+    <div class="mrow">
+      <div><label>Category</label><select id="m-cat">${catOpts}</select></div>
+      <div><label>Priority</label><select id="m-prio">${['high','med','low'].map(p=>`<option value="${p}"${(t?t.priority:'med')===p?' selected':''}>${p==='high'?'High':p==='med'?'Medium':'Low'}</option>`).join('')}</select></div>
+    </div>
+    <div class="mrow">
+      <div><label>Due date</label><input type="date" id="m-due" value="${t?esc(t.due||''):''}"></div>
+      <div><label>Status</label><select id="m-status">${['todo','doing','done'].map(s=>`<option value="${s}"${(t?t.status:'todo')===s?' selected':''}>${s==='todo'?'To do':s==='doing'?'In progress':'Done'}</option>`).join('')}</select></div>
+    </div>
+    ${cfg.recur?`<div><label>Recurring</label><select id="m-recur"><option value="">One-off</option>${['daily','weekly','biweekly','monthly'].map(r=>`<option value="${r}"${t&&t.recur===r?' selected':''}>${r}</option>`).join('')}</select></div>`:''}
+    <div><label>Steps / checklist</label><div id="sbWrap">${stepBuilderHTML()}</div></div>
+    <div class="mactions">${t?`<button class="mdel" onclick="delItem('${coll}','${t.id}')">Delete</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn accent" onclick="saveItem('${coll}','${t?t.id:''}')">Save</button></div>`);
+  setTimeout(()=>$('m-title').focus(),50);
+}
+function saveItem(coll,id){
+  const title=$('m-title').value.trim();if(!title){toast('Add a title first');return;}
+  const cfg=BOARD_CFG[coll];
+  const steps=_stepBuf.filter(s=>s.trim()).map(s=>({name:s.trim(),done:false}));
+  const existing=id?S[coll].find(x=>x.id===id):null;
+  if(existing&&existing.steps){steps.forEach((s,i)=>{const prev=existing.steps.find(p=>p.name===s.name);if(prev)s.done=prev.done;});}
+  const obj={id:id||uid(),title,note:$('m-note').value.trim(),cat:$('m-cat').value,priority:$('m-prio').value,due:$('m-due').value,status:$('m-status').value,steps,recur:cfg.recur?($('m-recur')?$('m-recur').value:''):'',created:existing?existing.created:today()};
+  if(existing)Object.assign(existing,obj);else S[coll].push(obj);
+  save();closeModal();buildNav();
+  if(coll==='college_tests')renderCollege();else renderBoard(coll);
+  toast('Saved');
+}
+function delItem(coll,id){S[coll]=S[coll].filter(x=>x.id!==id);save();closeModal();buildNav();if(coll==='college_tests')renderCollege();else renderBoard(coll);toast('Deleted');}
+
+let _topicBuf=[];
+function openCourse(id){
+  const c=id?S.courses.find(x=>x.id===id):null;
+  _topicBuf=c&&c.topics?c.topics.map(t=>t.name):[];
+  const palette=['#0891B2','#C84B00','#7B5EA7','#007600','#3B6FD4','#B07800','#CC0C39'];
+  openModal(`
+    <div class="modal-title">${c?'Edit':'New'} course</div>
+    <div><label>Course name</label><input id="c-name" value="${c?esc(c.name):''}" placeholder="e.g. Microeconomics"></div>
+    <div class="mrow"><div><label>Code (optional)</label><input id="c-code" value="${c?esc(c.code||''):''}" placeholder="ECO-201"></div>
+    <div><label>Professor (optional)</label><input id="c-prof" value="${c?esc(c.prof||''):''}"></div></div>
+    <div><label>Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="c-pal">${palette.map(p=>`<span data-col="${p}" onclick="pickCourseCol('${p}')" style="width:26px;height:26px;border-radius:7px;background:${p};cursor:pointer;border:2px solid ${(c?c.color:palette[0])===p?'var(--text)':'transparent'}"></span>`).join('')}</div></div>
+    <div><label>Topics / units</label><div id="tbWrap">${topicBuilderHTML()}</div></div>
+    <div class="mactions">${c?`<button class="mdel" onclick="delCourse('${c.id}')">Delete</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn accent" onclick="saveCourse('${c?c.id:''}')">Save</button></div>`);
+  _courseCol=c?c.color:'#0891B2';
+}
+let _courseCol='#0891B2';
+function pickCourseCol(c){_courseCol=c;document.querySelectorAll('#c-pal span').forEach(s=>s.style.border='2px solid '+(s.dataset.col===c?'var(--text)':'transparent'));}
+function topicBuilderHTML(){return `<div id="topicBuilder">${_topicBuf.map((s,i)=>`<div class="sbrow"><input value="${esc(s)}" oninput="_topicBuf[${i}]=this.value" placeholder="Topic / unit"><button class="sbx" onclick="_topicBuf.splice(${i},1);document.getElementById('tbWrap').innerHTML=topicBuilderHTML()">✕</button></div>`).join('')}</div><button class="btn sm ghost" onclick="_topicBuf.push('');document.getElementById('tbWrap').innerHTML=topicBuilderHTML()">+ Add topic</button>`;}
+function saveCourse(id){
+  const name=$('c-name').value.trim();if(!name){toast('Name the course');return;}
+  const existing=id?S.courses.find(x=>x.id===id):null;
+  const topics=_topicBuf.filter(t=>t.trim()).map(t=>({name:t.trim(),done:false}));
+  if(existing&&existing.topics)topics.forEach(t=>{const p=existing.topics.find(x=>x.name===t.name);if(p)t.done=p.done;});
+  const obj={id:id||uid(),name,code:$('c-code').value.trim(),prof:$('c-prof').value.trim(),color:_courseCol,topics};
+  if(existing)Object.assign(existing,obj);else S.courses.push(obj);
+  save();closeModal();renderCollege();toast('Saved');
+}
+function delCourse(id){S.courses=S.courses.filter(x=>x.id!==id);save();closeModal();renderCollege();toast('Deleted');}
+
+function openBlock(day,id){
+  const b=id?S.schedule.find(x=>x.id===id):null;
+  const palette=['#0891B2','#C84B00','#7B5EA7','#007600','#3B6FD4','#B07800','#CC0C39'];
+  _blockCol=b?b.color:'#0891B2';
+  openModal(`
+    <div class="modal-title">${b?'Edit':'New'} block · ${DAYS[day]}</div>
+    <div><label>Label</label><input id="b-label" value="${b?esc(b.label):''}" placeholder="e.g. FRM lecture, Econ class, Internship"></div>
+    <div class="mrow"><div><label>Start</label><input type="time" id="b-start" value="${b?b.start:'09:00'}"></div>
+    <div><label>End</label><input type="time" id="b-end" value="${b?b.end:'10:00'}"></div></div>
+    <div><label>Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="b-pal">${palette.map(p=>`<span data-col="${p}" onclick="pickBlockCol('${p}')" style="width:26px;height:26px;border-radius:7px;background:${p};cursor:pointer;border:2px solid ${_blockCol===p?'var(--text)':'transparent'}"></span>`).join('')}</div></div>
+    <div class="mactions">${b?`<button class="mdel" onclick="delBlock('${b.id}');closeModal()">Delete</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn accent" onclick="saveBlock(${day},'${b?b.id:''}')">Save</button></div>`);
+}
+let _blockCol='#0891B2';
+function pickBlockCol(c){_blockCol=c;document.querySelectorAll('#b-pal span').forEach(s=>s.style.border='2px solid '+(s.dataset.col===c?'var(--text)':'transparent'));}
+function saveBlock(day,id){
+  const label=$('b-label').value.trim();if(!label){toast('Add a label');return;}
+  const existing=id?S.schedule.find(x=>x.id===id):null;
+  const obj={id:id||uid(),day,label,start:$('b-start').value,end:$('b-end').value,color:_blockCol};
+  if(existing)Object.assign(existing,obj);else S.schedule.push(obj);
+  save();closeModal();renderSchedule();toast('Saved');
+}
+
+function openSettings(){
+  const st=S.settings;
+  openModal(`
+    <div class="modal-title">Settings</div>
+    <div><label>Your name</label><input id="s-name" value="${esc(st.name)}"></div>
+    <div><label>College / programme</label><input id="s-college" value="${esc(st.college)}"></div>
+    <div class="mrow"><div><label>FRM exam date</label><input type="date" id="s-exam" value="${st.examDate}"></div>
+    <div><label>Revision start</label><input type="date" id="s-rev" value="${st.revDate}"></div></div>
+    <div class="mrow"><div><label>Weekday study hrs</label><input type="number" step="0.5" id="s-wd" value="${st.weekdayHrs}"></div>
+    <div><label>Weekend study hrs</label><input type="number" step="0.5" id="s-we" value="${st.weekendHrs}"></div></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+      <label>Backup &amp; restore</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="exportJSON()">⬇ Download backup</button>
+        <button class="btn sm" onclick="document.getElementById('importFile').click()">⬆ Restore backup</button>
+        <button class="btn sm ghost" style="color:var(--red);border-color:rgba(204,12,57,.3)" onclick="resetAll()">Reset everything</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(this)">
+    </div>
+    <div class="mactions"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn accent" onclick="saveSettings()">Save</button></div>`);
+}
+function saveSettings(){
+  Object.assign(S.settings,{name:$('s-name').value.trim()||'Student',college:$('s-college').value.trim(),examDate:$('s-exam').value,revDate:$('s-rev').value,weekdayHrs:+$('s-wd').value||0,weekendHrs:+$('s-we').value||0});
+  save();closeModal();buildNav();render(current);toast('Settings saved');
+}
+function resetAll(){if(confirm('This erases all your data and reloads defaults. Continue?')){localStorage.removeItem(LS_KEY);S=JSON.parse(JSON.stringify(DEFAULTS));save();closeModal();buildNav();go('home');toast('Reset done');}}
+
+/* ============ EXPORT ============ */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='student-dashboard-backup-'+today()+'.json';a.click();toast('Backup downloaded');
+}
+function importJSON(inp){
+  const f=inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);S=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),d);save();closeModal();buildNav();go('home');toast('Backup restored');}catch(e){toast('Invalid backup file');}};
+  r.readAsText(f);
+}
+function exportFRM(){
+  const head=['Order','Schedule','Subject','Reading','Changes','Topic','No. of Chapters','No. of LOS','Lengthy','Numerical or Not','Diff. Level','Confusing','Imp. Level','Reqd. Prac.','Duration (hh:mm)','Cum. (%)','Lectures','Self Study','Revision','Prac. Pool','GARP 10 Yr Papers','GARP EOC Ques.','Confidence Level','Notes to Yourself'];
+  const rows=FRM_CH.map(c=>{const s=S.frm[c.order]||{};const du=v=>v?'D':'U';
+    return [c.order,c.schedule,c.subject,c.reading,c.changes,c.topic,c.chapters,c.los,c.lengthy,c.numeric,c.diff,c.confusing,c.imp,c.prac,hhmm(c.dur),c.cum,du(s.lec),du(s.ss),du(s.rev),du(s.pp),du(s.g10),du(s.geoc),s.conf||'',s.notes||''];});
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([head,...rows]);
+  ws['!cols']=head.map((h,i)=>({wch:i===5?42:i===2?24:i===23?26:i===1?12:10}));
+  XLSX.utils.book_append_sheet(wb,ws,'FRM P-1 Input');
+  // progress sheet
+  const psHead=['Subject','Readings','Lectures %','Self Study %','Practice %','Revision %','Confidence /5'];
+  const psRows=FRM_SUBJECTS.map(s=>{const st=subjStats(s);return[s,st.n,st.lec,st.ss,st.prac,st.rev,st.conf];});
+  const ps=XLSX.utils.aoa_to_sheet([psHead,...psRows]);ps['!cols']=[{wch:26},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ps,'Progress');
+  XLSX.writeFile(wb,'FRM_Part1_Tracker_'+today()+'.xlsx');
+  toast('Exported to Excel');
+}
+
+/* ============ THEME + INIT ============ */
+function toggleTheme(){S.settings.theme=S.settings.theme==='dark'?'light':'dark';applyTheme();save();}
+function applyTheme(){document.body.classList.toggle('dark',S.settings.theme==='dark');$('themeBtn').textContent=S.settings.theme==='dark'?'☀':'🌙';}
+function tickDate(){const d=new Date();$('datePill').textContent=DAYS[d.getDay()]+' · '+fmtDate(today());}
+
+function hardRefresh(){
+  const done=()=>location.reload();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs=>Promise.all(regs.map(r=>r.unregister()))).then(()=>{
+      if(window.caches)return caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))));
+    }).then(done).catch(done);
+  }else if(window.caches){
+    caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).then(done).catch(done);
+  }else{
+    done();
+  }
+}
+
+applyTheme();tickDate();buildNav();go('home');
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.error('sw',e)));}
+
+</script>
+</body>
+</html>
