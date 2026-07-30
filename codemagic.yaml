@@ -28,6 +28,7 @@ workflows:
         script: |
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
+          cp ios/App/App/GoogleService-Info.plist build/Payload/App.app/GoogleService-Info.plist
           cd build
           zip -r App-unsigned.ipa Payload
     artifacts:
