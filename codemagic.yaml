@@ -25,6 +25,9 @@ workflows:
           npx cap sync ios
       - name: Build unsigned archive
         script: |
+          mkdir -p build
+          echo -n "$(date -u +%Y%m%d%H%M%S)" > build/version.txt
+          VERSION=$(cat build/version.txt)
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -33,7 +36,8 @@ workflows:
             -destination "generic/platform=iOS" \
             archive \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            MARKETING_VERSION=$VERSION
       - name: Package unsigned ipa
         script: |
           mkdir -p build/Payload
@@ -44,7 +48,7 @@ workflows:
       - name: Publish to GitHub Release (AltStore source)
         script: |
           command -v gh >/dev/null 2>&1 || brew install gh
-          VERSION=$(date -u +%Y%m%d%H%M%S)
+          VERSION=$(cat build/version.txt)
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           SIZE=$(stat -f%z build/App-unsigned.ipa)
           printf '{"name":"Student Command Source","identifier":"com.soberhardik.studentdashboard.source","apps":[{"name":"Student Command","bundleIdentifier":"com.soberhardik.studentdashboard","developerName":"Mohit","version":"%s","versionDate":"%s","downloadURL":"https://github.com/%s/releases/download/latest/App-unsigned.ipa","localizedDescription":"Personal student dashboard app.","iconURL":"https://raw.githubusercontent.com/%s/main/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png","size":%s}]}' "$VERSION" "$DATE" "$GITHUB_REPO" "$GITHUB_REPO" "$SIZE" > build/apps.json
