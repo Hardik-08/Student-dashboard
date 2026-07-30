@@ -5,7 +5,14 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       xcode: latest
+      node: latest
     scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Sync web assets into iOS project
+        script: |
+          npx cap sync ios
       - name: Build unsigned archive
         script: |
           xcodebuild \
