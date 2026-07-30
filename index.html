@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Student Command — Mohit</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0891B2">
@@ -35,10 +35,17 @@ body.dark{
   --nav:#161B22;--navline:#010409;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+html,body{font-family:var(--fb);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+
+/* NATIVE APP SHELL (Capacitor) — contain scrolling to #main, kill body rubber-banding, respect safe areas */
+body.is-native,body.is-native html{height:100%;overflow:hidden;overscroll-behavior:none}
+body.is-native{position:fixed;inset:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.is-native input,body.is-native textarea{-webkit-user-select:text;user-select:text}
+body.is-native #main{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding-bottom:env(safe-area-inset-bottom)}
+body.is-native .header-top{padding-top:calc(10px + env(safe-area-inset-top))}
 
 /* HEADER */
 header{display:flex;flex-direction:column;background:var(--nav);position:sticky;top:0;z-index:200;border-bottom:1px solid var(--navline)}
@@ -301,7 +308,19 @@ function onAuthChange(user){
 }
 function cloudSignIn(){
   if(!auth){toast('Firebase not configured yet');return;}
-  if(cloudUser){auth.signOut();toast('Signed out');return;}
+  if(cloudUser){
+    if(IS_NATIVE){const FA=window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseAuthentication;if(FA)FA.signOut().catch(()=>{});}
+    auth.signOut();toast('Signed out');return;
+  }
+  if(IS_NATIVE){
+    const FA=window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseAuthentication;
+    if(!FA){toast('Google sign-in plugin not available in this build');return;}
+    FA.signInWithGoogle().catch(e=>{
+      console.error('native signin error',e);
+      toast('Sign-in error: '+(e.message||e.code||e));
+    });
+    return;
+  }
   const provider=new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch(e=>{
     if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/cancelled-popup-request'){
@@ -754,8 +773,18 @@ function hardRefresh(){
   }
 }
 
+/* ============ NATIVE APP SHELL DETECTION ============ */
+const IS_NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+if(IS_NATIVE){
+  document.body.classList.add('is-native');
+  const vp=$('viewportMeta');
+  if(vp)vp.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no');
+  const SB=window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
+  if(SB){SB.setStyle({style:'DARK'}).catch(()=>{});SB.setOverlaysWebView({overlay:true}).catch(()=>{});}
+}
+
 applyTheme();tickDate();buildNav();go('home');
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.error('sw',e)));}
+if(!IS_NATIVE&&'serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.error('sw',e)));}
 
 </script>
 </body>
