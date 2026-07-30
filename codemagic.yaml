@@ -47,24 +47,8 @@ workflows:
           VERSION=$(date -u +%Y%m%d%H%M%S)
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           SIZE=$(stat -f%z build/App-unsigned.ipa)
-          cat > build/apps.json << EOF
-          {
-            "name": "Student Command Source",
-            "identifier": "com.soberhardik.studentdashboard.source",
-            "apps": [
-              {
-                "name": "Student Command",
-                "bundleIdentifier": "com.soberhardik.studentdashboard",
-                "developerName": "Mohit",
-                "version": "$VERSION",
-                "versionDate": "$DATE",
-                "downloadURL": "https://github.com/$GITHUB_REPO/releases/download/latest/App-unsigned.ipa",
-                "localizedDescription": "Personal student dashboard app.",
-                "size": $SIZE
-              }
-            ]
-          }
-          EOF
+          printf '{"name":"Student Command Source","identifier":"com.soberhardik.studentdashboard.source","apps":[{"name":"Student Command","bundleIdentifier":"com.soberhardik.studentdashboard","developerName":"Mohit","version":"%s","versionDate":"%s","downloadURL":"https://github.com/%s/releases/download/latest/App-unsigned.ipa","localizedDescription":"Personal student dashboard app.","size":%s}]}' "$VERSION" "$DATE" "$GITHUB_REPO" "$SIZE" > build/apps.json
+          cat build/apps.json
           gh release view latest --repo "$GITHUB_REPO" >/dev/null 2>&1 || \
             gh release create latest --repo "$GITHUB_REPO" --title "Latest Build" --notes "Automatically updated by Codemagic"
           gh release upload latest build/App-unsigned.ipa build/apps.json --repo "$GITHUB_REPO" --clobber
