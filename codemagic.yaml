@@ -37,12 +37,16 @@ workflows:
             archive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            MARKETING_VERSION=$VERSION
+            MARKETING_VERSION=$VERSION \
+            CURRENT_PROJECT_VERSION=$VERSION
       - name: Package unsigned ipa
         script: |
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
           cp ios/App/App/GoogleService-Info.plist build/Payload/App.app/GoogleService-Info.plist
+          echo "Embedded CFBundleShortVersionString: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/Payload/App.app/Info.plist)"
+          echo "Embedded CFBundleVersion: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/Payload/App.app/Info.plist)"
+          echo "Expected version.txt: $(cat build/version.txt)"
           cd build
           zip -r App-unsigned.ipa Payload
       - name: Publish to GitHub Release (AltStore source)
