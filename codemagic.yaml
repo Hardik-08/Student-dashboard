@@ -6,6 +6,16 @@ workflows:
     environment:
       xcode: latest
       node: latest
+      groups:
+        - github_release
+      vars:
+        GITHUB_REPO: "Hardik-08/Student-dashboard"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
     scripts:
       - name: Install npm dependencies
         script: |
@@ -31,6 +41,34 @@ workflows:
           cp ios/App/App/GoogleService-Info.plist build/Payload/App.app/GoogleService-Info.plist
           cd build
           zip -r App-unsigned.ipa Payload
+      - name: Publish to GitHub Release (AltStore source)
+        script: |
+          command -v gh >/dev/null 2>&1 || brew install gh
+          VERSION=$(date -u +%Y%m%d%H%M%S)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          SIZE=$(stat -f%z build/App-unsigned.ipa)
+          cat > build/apps.json << EOF
+          {
+            "name": "Student Command Source",
+            "identifier": "com.soberhardik.studentdashboard.source",
+            "apps": [
+              {
+                "name": "Student Command",
+                "bundleIdentifier": "com.soberhardik.studentdashboard",
+                "developerName": "Mohit",
+                "version": "$VERSION",
+                "versionDate": "$DATE",
+                "downloadURL": "https://github.com/$GITHUB_REPO/releases/download/latest/App-unsigned.ipa",
+                "localizedDescription": "Personal student dashboard app.",
+                "size": $SIZE
+              }
+            ]
+          }
+          EOF
+          gh release view latest --repo "$GITHUB_REPO" >/dev/null 2>&1 || \
+            gh release create latest --repo "$GITHUB_REPO" --title "Latest Build" --notes "Automatically updated by Codemagic"
+          gh release upload latest build/App-unsigned.ipa build/apps.json --repo "$GITHUB_REPO" --clobber
     artifacts:
       - build/App-unsigned.ipa
       - build/App.xcarchive
+      - build/apps.json
