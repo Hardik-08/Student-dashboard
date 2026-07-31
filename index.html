@@ -266,6 +266,7 @@ const FRM_SUBJECTS=["Foundation of Risk Mgmt","Quantitative Analysis","Financial
 const SUBJ_COLOR={"Foundation of Risk Mgmt":"#0891B2","Quantitative Analysis":"#7B5EA7","Financial Mkts & Products":"#C84B00","Valuation & Risk Models":"#007600"};
 const TOTAL_CHAPTERS=FRM_CH.reduce((s,c)=>s+c.chapters,0);
 const TOTAL_HRS=Math.round(FRM_CH.reduce((s,c)=>s+c.dur,0)/60);
+const DU_COURSE_TYPES=["DSC","DSE","GE","SEC","VAC","AEC"];
 
 /* ============ STATE ============ */
 const LS_KEY='stu_dash_v1';
@@ -587,7 +588,7 @@ function renderCourses(){
 function courseCard(c){
   const t=c.topics||[];const done=t.filter(x=>x.done).length;const pct=t.length?Math.round(done/t.length*100):0;
   return `<div class="icard" onclick="openCourse('${c.id}')" style="border-left:4px solid ${c.color}">
-    <div class="icard-top"><span class="icard-title">${esc(c.name)}</span>${c.code?`<span class="tag" style="background:${c.color}1e;color:${c.color}">${esc(c.code)}</span>`:''}</div>
+    <div class="icard-top"><span class="icard-title">${esc(c.name)}</span>${c.type?`<span class="tag" style="background:var(--surface3);color:var(--muted)">${esc(c.type)}</span>`:''}${c.code?`<span class="tag" style="background:${c.color}1e;color:${c.color}">${esc(c.code)}</span>`:''}</div>
     ${c.prof?`<div class="icard-note">👤 ${esc(c.prof)}</div>`:''}
     <div class="pbar" style="margin:4px 0 6px"><div class="pbar-fill" style="width:${pct}%;background:${c.color}"></div></div>
     <div class="mini-prog">${done}/${t.length} topics · ${pct}%</div>
@@ -681,6 +682,7 @@ function openCourse(id){
     <div><label>Course name</label><input id="c-name" value="${c?esc(c.name):''}" placeholder="e.g. Microeconomics"></div>
     <div class="mrow"><div><label>Code (optional)</label><input id="c-code" value="${c?esc(c.code||''):''}" placeholder="ECO-201"></div>
     <div><label>Professor (optional)</label><input id="c-prof" value="${c?esc(c.prof||''):''}"></div></div>
+    <div><label>Course type</label><select id="c-type"><option value="">—</option>${DU_COURSE_TYPES.map(ty=>`<option value="${ty}"${c&&c.type===ty?' selected':''}>${ty}</option>`).join('')}</select></div>
     <div><label>Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="c-pal">${palette.map(p=>`<span data-col="${p}" onclick="pickCourseCol('${p}')" style="width:26px;height:26px;border-radius:7px;background:${p};cursor:pointer;border:2px solid ${(c?c.color:palette[0])===p?'var(--text)':'transparent'}"></span>`).join('')}</div></div>
     <div><label>Topics / units</label><div id="tbWrap">${topicBuilderHTML()}</div></div>
     <div class="mactions">${c?`<button class="mdel" onclick="delCourse('${c.id}')">Delete</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn accent" onclick="saveCourse('${c?c.id:''}')">Save</button></div>`);
@@ -694,7 +696,7 @@ function saveCourse(id){
   const existing=id?S.courses.find(x=>x.id===id):null;
   const topics=_topicBuf.filter(t=>t.trim()).map(t=>({name:t.trim(),done:false}));
   if(existing&&existing.topics)topics.forEach(t=>{const p=existing.topics.find(x=>x.name===t.name);if(p)t.done=p.done;});
-  const obj={id:id||uid(),name,code:$('c-code').value.trim(),prof:$('c-prof').value.trim(),color:_courseCol,topics};
+  const obj={id:id||uid(),name,code:$('c-code').value.trim(),prof:$('c-prof').value.trim(),type:$('c-type').value,color:_courseCol,topics};
   if(existing)Object.assign(existing,obj);else S.courses.push(obj);
   save();closeModal();renderCollege();toast('Saved');
 }
